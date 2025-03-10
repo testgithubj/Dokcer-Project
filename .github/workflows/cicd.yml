@@ -19,14 +19,50 @@ jobs:
             
             - name: Test The applications
               run: npm run check
+    build:
+        runs-on: ubuntu-latest
+        steps:
+
+            - name: Checkout the repo
+              uses: actions/checkout@v3
             
+            - name: Install Node Js
+              uses: actions/setup-node@v4
+              with:
+                node-version: "22"
+
+
+            - name: Install pakages
+              run: |
+                mkdir build
+                cd build
+                echo "Hello World" > hello.txt
+            
+            - name: Upload The Artiface
+              uses: actions/upload-artifact@v4
+              with:
+                name: build_folder
+                path: ./build
+
+
+            - name: Test The applications
+              run: npm run check
     deploy:
         needs: test
         runs-on: self-hosted
         steps:
             - name: Checkout The Code
               uses: actions/checkout@v3
+
+            - name: Receive The Artiface
+              uses: actions/download-artifact@v4
+              with:
+                name: build_folder
             
+            - name: Show The Artiface
+              run: |
+                ls -a
+
             - name: Install The Package
               run: npm install
             
@@ -46,8 +82,6 @@ jobs:
                 # Save The Process List.
                 pm2 save
 
-            
-            
 
 
 

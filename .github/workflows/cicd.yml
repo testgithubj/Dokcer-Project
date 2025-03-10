@@ -20,6 +20,7 @@ jobs:
             - name: Test The applications
               run: npm run check
     build:
+        needs: test
         runs-on: ubuntu-latest
         steps:
 
@@ -47,8 +48,11 @@ jobs:
 
             - name: Test The applications
               run: npm run check
+
+
+              
     deploy:
-        needs: test
+        needs: build
         runs-on: self-hosted
         steps:
             - name: Checkout The Code

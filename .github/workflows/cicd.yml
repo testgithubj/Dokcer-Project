@@ -1,0 +1,30 @@
+name: CICD pipeline
+
+on: [push]
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        steps:
+
+            - name: Checkout the repo
+              uses: actions/checkout@v3
+            
+            - name: Install Node Js
+              uses: actions/setup-node@v4
+              with:
+                node-version: "22"
+            - name: Install pakages
+              run: npm install
+            
+            - name: Test The applications
+              run: npm run check
+            
+
+              
+            
+            
+
+
+
+            

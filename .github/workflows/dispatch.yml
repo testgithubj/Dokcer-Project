@@ -2,6 +2,15 @@ name: Test dispatch
 
 on:
     workflow_dispatch:
+        inputs:
+            environment:
+                description: 'Select Environment'
+                required: true
+                default: 'staging'
+                type: choice
+                options:
+                    - staging
+                    - production
 
 jobs:
     clean_everything:
@@ -11,4 +20,4 @@ jobs:
               run: echo "Cleaning The databases"
 
 
-              
+

@@ -1,6 +1,8 @@
 name: CICD pipeline
 
-on: [push]
+on:
+  workflow_dispatch:
+  
 
 jobs:
     test:
@@ -60,6 +62,7 @@ jobs:
               uses: actions/download-artifact@v4
               with:
                 name: build_folder
+                path: ./test
             
             - name: Show The Artiface
               run: |

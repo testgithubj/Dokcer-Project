@@ -1,0 +1,14 @@
+name: Test dispatch
+
+on:
+    workflow_dispatch:
+
+jobs:
+    clean_everything:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Cleaning The DB
+              run: echo "Cleaning The databases"
+
+
+              

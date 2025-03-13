@@ -18,6 +18,9 @@ jobs:
         steps:
             - name: Cleaning The DB
               run: echo "Cleaning The databases"
+            
+            - name: Print The Selected Environment
+              run: echo "Environment Is ${{github.event.inputs.environment}}"
 
 
 

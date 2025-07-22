@@ -1,4 +1,27 @@
 
+Build and run using Docker Compose:
+
+docker-compose up --build
+
+# Module-3-Deployment: Dockerized Express.js App with Nginx Proxy
+
+## Project Description
+This project contains a simple Express.js application containerized using Docker. It runs alongside an Nginx proxy server using Docker Compose. The goal is to demonstrate how to Dockerize a Node.js app, deploy it with Nginx, and manage multi-container Docker apps with Compose.
+
+---
+
+## How to Run Locally
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/testgithubj/Module-3-deployment1.git
+   cd Module-3-deployment1
+
+
+
+
+
+
 
 ## Prerequisites
 
@@ -44,6 +67,45 @@ npm start
    ```
 
 2. **Default Port**: By Default this application will run on port 3000
+
+
+https://github.com/testgithubj/Module-3-deployment1
+
+Build and run using Docker Compose:
+
+docker-compose up --build
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

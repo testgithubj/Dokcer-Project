@@ -1,0 +1,38 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main  # যখন main ব্রাঞ্চে কোড পুশ হবে, তখন পিপলাইন চলবে
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build Docker image
+        run: |
+          docker build -t your-image-name .  # এখানে আপনার Docker ইমেজের নাম দিবেন
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}  # DockerHub username GitHub Secrets থেকে নেয়া হবে
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}  # DockerHub password GitHub Secrets থেকে নেয়া হবে
+
+      - name: Push Docker image
+        run: |
+          docker push your-image-name  # DockerHub বা অন্য রেজিস্ট্রিতে ইমেজ পুশ করা
+
+      - name: Deploy to Kubernetes
+        uses: appleboy/ssh-action@v0.1.0
+        with:
+          host: ${{ secrets.K8S_HOST }}  # Kubernetes Host GitHub Secrets থেকে নেয়া হবে
+          username: ${{ secrets.K8S_USERNAME }}  # Kubernetes username GitHub Secrets থেকে নেয়া হবে
+          key: ${{ secrets.K8S_SSH_KEY }}  # Kubernetes SSH Key GitHub Secrets থেকে নেয়া হবে
+          script: |
+            kubectl apply -f k8s/deployment.yaml  # Kubernetes Deployment YAML ফাইল প্রয়োগ
+            kubectl set image deployment/your-deployment-name your-container-name=your-image-name  # কনটেইনার ইমেজ আপডেট

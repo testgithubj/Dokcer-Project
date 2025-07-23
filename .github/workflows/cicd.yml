@@ -2,93 +2,79 @@ name: CICD pipeline
 
 on:
   push:
-
-  
+    branches:
+      - main  # শুধু main ব্রাঞ্চে কোড পুশ হলে পিপলাইন চলবে
 
 jobs:
-    test:
-        runs-on: ubuntu-latest
-        steps:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v3
 
-            - name: Checkout the repo
-              uses: actions/checkout@v3
-            
-            - name: Install Node Js
-              uses: actions/setup-node@v4
-              with:
-                node-version: "22"
-            - name: Install pakages
-              run: npm install
-            
-            - name: Test The applications
-              run: npm run check
-    
-    build:
-        needs: test
-        runs-on: ubuntu-latest
-        steps:
+      - name: Install Node Js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
 
-            - name: Checkout the repo
-              uses: actions/checkout@v3
-            
-            - name: Install Node Js
-              uses: actions/setup-node@v4
-              with:
-                node-version: "22"
+      - name: Install packages
+        run: npm install
 
+      - name: Test the application
+        run: npm run check  # Test the application using npm run check
 
-            - name: Create The Artifact file
-              run: |
-                mkdir build
-                cd build
-                echo "Hello World" > hello.txt
-            
-            - name: Upload The Artiface
-              uses: actions/upload-artifact@v4
-              with:
-                name: build_folder
-                path: ./build
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v3
 
+      - name: Install Node Js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
 
+      - name: Create the Artifact file
+        run: |
+          mkdir build
+          cd build
+          echo "Hello World" > hello.txt
 
+      - name: Upload the Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build_folder
+          path: ./build
 
-    deploy:
-        needs: build
-        runs-on: self-hosted
-        steps:
-            - name: Checkout The Code
-              uses: actions/checkout@v3
+  deploy:
+    needs: build
+    runs-on: self-hosted
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v3
 
-            - name: Receive The Artiface
-              uses: actions/download-artifact@v4
-              with:
-                name: build_folder
-                path: ./test
-            
-            - name: Show The Artiface
-              run: |
-                ls -a
+      - name: Receive the Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build_folder
+          path: ./test
 
-            - name: Install The Package
-              run: npm install
-            
-            - name: Run The Application By PM2
-              run: |
-                ls -a
-                pm2 status
-                # delete node-app process
-                pm2 delete node-app || true
+      - name: Show the Artifact
+        run: |
+          ls -a
 
-                # pm2 restart all
+      - name: Install the Package
+        run: npm install
 
-
-                # Create a Background process name node-app
-                pm2 start "npm start" --name="node-app"
-
-                # Save The Process List.
-                pm2 save
-
-
-
-
-            
+      - name: Run the Application by PM2
+        run: |
+          ls -a
+          pm2 status
+          # Delete the node-app process
+          pm2 delete node-app || true
+          # pm2 restart all
+          # Create a background process named node-app
+          pm2 start "npm start" --name="node-app"
+          # Save the process list
+          pm2 save

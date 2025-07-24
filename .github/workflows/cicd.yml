@@ -1,5 +1,6 @@
 name: CICD pipeline
 
+# যেকোনো push হলে main ব্রাঞ্চে, pipeline চলবে
 on:
   push:
     branches:
@@ -7,58 +8,63 @@ on:
 
 jobs:
   test:
+    name: 🔍 Test Step
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout the repo
+      - name: ✅ কোড ক্লোন করুন
         uses: actions/checkout@v3
 
-      - name: Install Node Js
+      - name: 🛠️ Node.js সেটআপ করুন
         uses: actions/setup-node@v4
         with:
           node-version: "22"
 
-      - name: Install packages
+      - name: 📦 ডিপেন্ডেন্সি ইনস্টল করুন
         run: npm install
 
-      - name: Test the application
+      - name: 🧪 টেস্ট চালান
         run: npm run check
 
   build:
+    name: 🏗️ Build Step
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout the repo
+      - name: ✅ কোড ক্লোন করুন
         uses: actions/checkout@v3
 
-      - name: Create the Artifact file
+      - name: 🛠️ বিল্ড আর্টিফ্যাক্ট তৈরি করুন
         run: |
           mkdir build
           echo "Hello World" > build/hello.txt
 
-      - name: Upload the Artifact
+      - name: ☁️ আর্টিফ্যাক্ট আপলোড করুন
         uses: actions/upload-artifact@v4
         with:
           name: build_folder
           path: ./build
 
   deploy:
+    name: 🚀 ডিপ্লয় স্টেপ
     needs: build
     runs-on: self-hosted
     steps:
-      - name: Checkout the code
+      - name: ✅ কোড ক্লোন করুন
         uses: actions/checkout@v3
 
-      - name: Receive the Artifact
+      - name: ☁️ আর্টিফ্যাক্ট ডাউনলোড করুন
         uses: actions/download-artifact@v4
         with:
           name: build_folder
           path: ./test
 
-      - name: Show the Artifact
+      - name: 📂 আর্টিফ্যাক্ট দেখুন
         run: ls -a ./test
 
-      - name: Install the Package
+      - name: 📦 ডিপেন্ডেন্সি ইনস্টল করুন
         run: npm install
 
-      - name: Run the Application
-        run: npm start
+      - name: 🟢 অ্যাপ চালু করুন (non-blocking)
+        run: |
+          npm start &
+          sleep 10

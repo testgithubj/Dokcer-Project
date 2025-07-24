@@ -69,7 +69,7 @@ jobs:
         run: docker push ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.ref_name }}
 
   deploy:
-    name: 🚀 Deploy to Server (Self-Hosted with Docker)
+    name: 🚀 Deploy to Server (Self-Hosted Docker)
     needs: docker-push
     runs-on: self-hosted
     steps:
@@ -78,7 +78,7 @@ jobs:
           docker pull ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.ref_name }}
           docker pull ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.ref_name }}
 
-      - name: Stop & Remove Existing Containers
+      - name: Remove Old Containers
         run: |
           docker rm -f pharmacy-frontend || true
           docker rm -f pharmacy-backend || true
@@ -103,8 +103,8 @@ jobs:
     needs: deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Send Slack Notification
+      - name: Notify via Slack
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ env.SLACK_WEBHOOK }}
-          SLACK_MESSAGE: "✅ Pharmacy Deployment for `${{ github.ref_name }}` branch সফলভাবে সম্পন্ন হয়েছে!"
+          SLACK_MESSAGE: "✅ Pharmacy Deployment `${{ github.ref_name }}` ব্রাঞ্চের জন্য সফল হয়েছে!"

@@ -1,0 +1,110 @@
+name: Pharmacy-CI-CD-Extended
+
+on:
+  push:
+    branches:
+      - main
+      - qa
+      - staging
+      - production
+
+env:
+  IMAGE_NAME_FRONTEND: pharmacy-frontend
+  IMAGE_NAME_BACKEND: pharmacy-backend
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+jobs:
+  test-backend:
+    name: 🧪 Backend Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Unit Tests
+        run: npm run test
+
+  build:
+    name: 🔧 Build Frontend & Backend
+    needs: test-backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Build Frontend Docker Image
+        run: docker build -t ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.ref_name }} ./frontend
+
+      - name: Build Backend Docker Image
+        run: docker build -t ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.ref_name }} ./backend
+
+  docker-push:
+    name: 🐳 Push Docker Images
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: DockerHub Login
+        run: echo "${{ env.DOCKERHUB_TOKEN }}" | docker login -u "${{ env.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Push Frontend Image
+        run: docker push ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.ref_name }}
+
+      - name: Push Backend Image
+        run: docker push ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.ref_name }}
+
+  deploy:
+    name: 🚀 Deploy to Server (Self-Hosted)
+    needs: docker-push
+    runs-on: self-hosted
+    steps:
+      - name: Pull Images
+        run: |
+          docker pull ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.ref_name }}
+          docker pull ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.ref_name }}
+
+      - name: Remove Existing Containers
+        run: |
+          docker rm -f pharmacy-frontend || true
+          docker rm -f pharmacy-backend || true
+
+      - name: Run Frontend Container
+        run: |
+          docker run -d --name pharmacy-frontend -p 80:80 \
+          ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.ref_name }}
+
+      - name: Run Backend Container
+        run: |
+          docker run -d --name pharmacy-backend -p 3000:3000 \
+          -e NODE_ENV=${{ github.ref_name }} \
+          -e PORT=3000 \
+          -e REDIS_HOST=redis \
+          -e REDIS_PORT=6379 \
+          -e DB_URL=${{ secrets.POSTGRES_DB_URL }} \
+          ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.ref_name }}
+
+  notify:
+    name: 📣 Slack Notify
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack Notification
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ env.SLACK_WEBHOOK }}
+          SLACK_MESSAGE: "✅ Pharmacy Deployment for `${{ github.ref_name }}` branch সফলভাবে সম্পন্ন হয়েছে!"

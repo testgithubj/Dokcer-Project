@@ -69,16 +69,16 @@ jobs:
         run: docker push ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.ref_name }}
 
   deploy:
-    name: 🚀 Deploy to Server (Self-Hosted)
+    name: 🚀 Deploy to Server (Self-Hosted with Docker)
     needs: docker-push
     runs-on: self-hosted
     steps:
-      - name: Pull Images
+      - name: Pull Docker Images
         run: |
           docker pull ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.ref_name }}
           docker pull ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.ref_name }}
 
-      - name: Remove Existing Containers
+      - name: Stop & Remove Existing Containers
         run: |
           docker rm -f pharmacy-frontend || true
           docker rm -f pharmacy-backend || true
@@ -99,11 +99,11 @@ jobs:
           ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.ref_name }}
 
   notify:
-    name: 📣 Slack Notify
+    name: 📣 Slack Notification
     needs: deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Slack Notification
+      - name: Send Slack Notification
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ env.SLACK_WEBHOOK }}

@@ -3,7 +3,7 @@ name: CICD pipeline
 on:
   push:
     branches:
-      - main  # শুধু main ব্রাঞ্চে কোড পুশ হলে পিপলাইন চলবে
+      - main
 
 jobs:
   test:
@@ -21,7 +21,7 @@ jobs:
         run: npm install
 
       - name: Test the application
-        run: npm run check  # Test the application using npm run check
+        run: npm run check
 
   build:
     needs: test
@@ -30,16 +30,10 @@ jobs:
       - name: Checkout the repo
         uses: actions/checkout@v3
 
-      - name: Install Node Js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
       - name: Create the Artifact file
         run: |
           mkdir build
-          cd build
-          echo "Hello World" > hello.txt
+          echo "Hello World" > build/hello.txt
 
       - name: Upload the Artifact
         uses: actions/upload-artifact@v4
@@ -61,20 +55,10 @@ jobs:
           path: ./test
 
       - name: Show the Artifact
-        run: |
-          ls -a
+        run: ls -a ./test
 
       - name: Install the Package
         run: npm install
 
-      - name: Run the Application by PM2
-        run: |
-          ls -a
-          pm2 status
-          # Delete the node-app process
-          pm2 delete node-app || true
-          # pm2 restart all
-          # Create a background process named node-app
-          pm2 start "npm start" --name="node-app"
-          # Save the process list
-          pm2 save
+      - name: Run the Application
+        run: npm start

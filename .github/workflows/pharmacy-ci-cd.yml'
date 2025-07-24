@@ -1,0 +1,117 @@
+name: Pharmacy-CI-CD-Extended
+
+on:
+  push:
+    branches:
+      - main
+      - qa
+      - staging
+      - production
+
+env:
+  IMAGE_NAME: pharmacy-app
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+jobs:
+  test:
+    name:  Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Unit Tests
+        run: npm run test
+
+  build:
+    name:  Build App
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Project
+        run: npm run build
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pharmacy_build
+          path: build/
+
+  docker:
+    name: Docker Build & Push
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Log in to DockerHub
+        run: echo "${{ env.DOCKERHUB_TOKEN }}" | docker login -u "${{ env.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build Docker Image
+        run: docker build -t ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} .
+
+      - name: Push Docker Image
+        run: docker push ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+
+  deploy:
+    name: Deploy to Server
+    needs: docker
+    runs-on: self-hosted
+    steps:
+      - name: Pull Docker Image
+        run: docker pull ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+
+      - name: Stop Existing Container
+        run: docker rm -f pharmacy || true
+
+      - name: Run Docker Container
+        run: |
+          docker run -d --name pharmacy -p 3000:3000 \
+          -e NODE_ENV=${{ github.ref_name }} \
+          -e PORT=3000 \
+          -e DB_URL=${{ secrets.POSTGRES_DB_URL }} \
+          -e REDIS_HOST=redis \
+          -e REDIS_PORT=6379 \
+          ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+
+  db-migrate:
+    name:  PostgreSQL Migration
+    needs: deploy
+    runs-on: self-hosted
+    steps:
+      - name: Run DB Migration
+        run: |
+          npm run migrate
+
+  notify:
+    name:  Slack Notification
+    needs: [test, build, docker, deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack Notification
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ env.SLACK_WEBHOOK }}
+          SLACK_MESSAGE: " Deployment for branch ${{ github.ref_name }} was successful!"
